@@ -18,49 +18,29 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(start_text)
 
 async def handle_photo_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик сообщений с фото"""
     user_id = update.effective_user.id
     current_time = datetime.now()
+    
+    # Проверка кулдауна (20 минут)
+    if user_id in user_cooldown:
+        time_diff = current_time - user_cooldown[user_id]
+        if time_diff < timedelta(minutes=20):
+            remaining = timedelta(minutes=20) - time_diff
+            minutes = int(remaining.seconds / 60)
+            seconds = remaining.seconds % 60
+            await update.message.reply_text(f"❌ Новое объявление можно отправить через {minutes}м {seconds}с")
+            return
 
-   if user_id in user_cooldown:
-    time_diff = current_time - user_cooldown[user_id]
-    if time_diff < timedelta(minutes=20):
-        remaining = timedelta(minutes=20) - time_diff
-        minutes = int(remaining.seconds / 60)
-        seconds = remaining.seconds % 60
-        await update.message.reply_text(f"❌ Новое объявление можно отправить через {minutes}м {seconds}с")
+    # Проверка наличия подписи
+    if not update.message.caption:
+        await update.message.reply_text("❌ Добавьте текст объявления к фотографии (длина текста не менее 10 символов)")
         return
 
-    if not update.message.caption or len(update.message.caption) < 10:
-        await update.message.reply_text("❌ Добавьте текст объявления от 10 символов.")
+    # Проверка длины текста
+    if len(update.message.caption) < 10:
+        await update.message.reply_text("❌ Текст объявления должен содержать минимум 10 символов")
         return
-
-    username = f"@{update.effective_user.username}" if update.effective_user.username else "Не указан"
-    user_profile_link = f"tg://user?id={user_id}"
-
-    caption = f"{update.message.caption}\n\nНаписать автору: [{username}]({user_profile_link})"
-
-    disclaimer = "\n\nВажно! Будьте внимательны. 18+"
-    full_text = caption + disclaimer
-
-    admin_keyboard = [
-        [InlineKeyboardButton("Подать объявление", url="https://t.me/New_post_vape_bot")],
-        [InlineKeyboardButton("Реклама", url="https://t.me/Manager_Greshnik")]
-    ]
-    reply_markup = InlineKeyboardMarkup(admin_keyboard)
-
-    await context.bot.send_photo(
-        chat_id=ADMIN_CHAT_ID,
-        photo=update.message.photo[-1].file_id,
-        caption=full_text,
-        parse_mode=ParseMode.MARKDOWN,
-        reply_markup=reply_markup
-    )
-
-    user_cooldown[user_id] = current_time
-    await update.message.reply_text("✅ Объявление отправлено на модерацию!")
-
-async def handle_invalid_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("❌ Отправьте одну фотографию + текст (не менее 10 символов).")
 
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.error(f"Ошибка: {context.error}")
