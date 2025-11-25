@@ -23,11 +23,11 @@ async def handle_photo_message(update: Update, context: ContextTypes.DEFAULT_TYP
 
     if user_id in user_cooldown:
         time_diff = current_time - user_cooldown[user_id]
-        if time_diff < timedelta(hours=24):
-            remaining = timedelta(hours=24) - time_diff
-            hours = int(remaining.seconds / 3600)
-            minutes = int((remaining.seconds % 3600) / 60)
-            await update.message.reply_text(f"❌ Новое объявление можно отправить через {hours}ч {minutes}м")
+        if time_diff < timedelta(minutes=20):
+            remaining = timedelta(minutes=20) - time_diff
+            minutes = int(remaining.seconds / 60)
+            seconds = remaining.seconds % 60
+            await update.message.reply_text(f"❌ Новое объявление можно отправить через {minutes}м {seconds}с")
             return
 
     if not update.message.caption or len(update.message.caption) < 10:
